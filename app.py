@@ -12,6 +12,7 @@ ROBOFLOW_URL = (
 )
 
 st.set_page_config(page_title="Deteksi Obat Realtime")
+
 st.title("Deteksi Obat Realtime AI")
 
 
@@ -35,7 +36,7 @@ class VideoProcessor(VideoProcessorBase):
 
             small_img = cv2.resize(
                 img,
-                (416, 416)
+                (224, 224)
             )
 
             success, buffer = cv2.imencode(
@@ -56,32 +57,30 @@ class VideoProcessor(VideoProcessorBase):
                                 "image/jpeg"
                             )
                         },
-                        timeout=10
+                        timeout=5
                     )
 
                     result = response.json()
-
-                    print("ROBOFLOW:", result)
 
                     self.last_predictions = result.get(
                         "predictions",
                         []
                     )
 
-                except Exception as e:
-                    print("ERROR:", e)
+                except Exception:
+                    pass
 
         obat_bagus = 0
         obat_rusak = 0
 
-        scale_x = orig_w / 416
-        scale_y = orig_h / 416
+        scale_x = orig_w / 224
+        scale_y = orig_h / 224
 
         for pred in self.last_predictions:
 
             confidence = pred.get("confidence", 0)
 
-            if confidence < 0.30:
+            if confidence < 0.70:
                 continue
 
             kelas = pred["class"]
@@ -150,16 +149,9 @@ class VideoProcessor(VideoProcessorBase):
             2
         )
 
-        cv2.putText(
-            img,
-            f"Prediksi: {len(self.last_predictions)}",
-            (10, 115),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (255, 255, 0),
-            2
-        )
-
+        # ==========================
+        # ALARM VISUAL OBAT RUSAK
+        # ==========================
         if obat_rusak > 0:
 
             cv2.rectangle(
@@ -222,9 +214,7 @@ webrtc_streamer(
         "video": {
             "facingMode": {
                 "ideal": "environment"
-            },
-            "width": {"ideal": 640},
-            "height": {"ideal": 480}
+            }
         },
         "audio": False
     },
