@@ -7,12 +7,9 @@ import time
 
 API_KEY = "uc5sGP3TXol5G8dbrmo3"
 
-ROBOFLOW_URL = (
-    f"https://detect.roboflow.com/pills-deteks/3?api_key={API_KEY}"
-)
+ROBOFLOW_URL = f"https://detect.roboflow.com/pills-deteks/3?api_key={API_KEY}"
 
 st.set_page_config(page_title="Deteksi Obat Realtime")
-
 st.title("Deteksi Obat Realtime AI")
 
 
@@ -30,19 +27,13 @@ class VideoProcessor(VideoProcessorBase):
 
         now = time.time()
 
-        if now - self.last_request > 0.3:
+        if now - self.last_request > 0.5:
 
             self.last_request = now
 
-            small_img = cv2.resize(
-                img,
-                (224, 224)
-            )
+            small_img = cv2.resize(img, (416, 416))
 
-            success, buffer = cv2.imencode(
-                ".jpg",
-                small_img
-            )
+            success, buffer = cv2.imencode(".jpg", small_img)
 
             if success:
 
@@ -57,7 +48,7 @@ class VideoProcessor(VideoProcessorBase):
                                 "image/jpeg"
                             )
                         },
-                        timeout=5
+                        timeout=10
                     )
 
                     result = response.json()
@@ -67,20 +58,20 @@ class VideoProcessor(VideoProcessorBase):
                         []
                     )
 
-                except Exception:
-                    pass
+                except Exception as e:
+                    print("ERROR:", e)
 
         obat_bagus = 0
         obat_rusak = 0
 
-        scale_x = orig_w / 224
-        scale_y = orig_h / 224
+        scale_x = orig_w / 416
+        scale_y = orig_h / 416
 
         for pred in self.last_predictions:
 
             confidence = pred.get("confidence", 0)
 
-            if confidence < 0.70:
+            if confidence < 0.60:
                 continue
 
             kelas = pred["class"]
@@ -98,17 +89,14 @@ class VideoProcessor(VideoProcessorBase):
             y2 = int(y + h / 2)
 
             if kelas == "obat_bagus":
-
                 warna = (0, 255, 0)
                 obat_bagus += 1
 
             elif kelas == "obat_rusak":
-
                 warna = (0, 0, 255)
                 obat_rusak += 1
 
             else:
-
                 warna = (255, 255, 0)
 
             cv2.rectangle(
@@ -159,43 +147,14 @@ class VideoProcessor(VideoProcessorBase):
                 12
             )
 
-            overlay = img.copy()
-
-            cv2.rectangle(
-                overlay,
-                (0, 0),
-                (orig_w, orig_h),
-                (0, 0, 255),
-                -1
-            )
-
-            cv2.addWeighted(
-                overlay,
-                0.15,
-                img,
-                0.85,
-                0,
-                img
-            )
-
             cv2.putText(
                 img,
                 "OBAT RUSAK!",
                 (30, 150),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                1.8,
+                1.5,
                 (255, 255, 255),
-                5
-            )
-
-            cv2.putText(
-                img,
-                "REJECT",
-                (80, 230),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                2,
-                (0, 0, 255),
-                6
+                4
             )
 
         return av.VideoFrame.from_ndarray(
@@ -204,10 +163,6 @@ class VideoProcessor(VideoProcessorBase):
         )
 
 
-# ==========================
-# PILIH KAMERA
-# ==========================
-
 kamera = st.selectbox(
     "Pilih Kamera",
     ["Kamera Belakang", "Kamera Depan"]
@@ -215,10 +170,10 @@ kamera = st.selectbox(
 
 if kamera == "Kamera Belakang":
     facing_mode = "environment"
-    stream_key = "deteksi-obat-belakang"
+    stream_key = "belakang"
 else:
     facing_mode = "user"
-    stream_key = "deteksi-obat-depan"
+    stream_key = "depan"
 
 webrtc_streamer(
     key=stream_key,
@@ -228,7 +183,7 @@ webrtc_streamer(
         "video": {
             "width": {"ideal": 640},
             "height": {"ideal": 480},
-            "facingMode": {"ideal": facing_mode}
+            "facingMode": facing_mode
         },
         "audio": False
     },
@@ -239,13 +194,6 @@ webrtc_streamer(
                 "urls": [
                     "stun:stun.l.google.com:19302"
                 ]
-            },
-            {
-                "urls": [
-                    "turn:openrelay.metered.ca:80"
-                ],
-                "username": "openrelayproject",
-                "credential": "openrelayproject"
             }
         ]
     }
