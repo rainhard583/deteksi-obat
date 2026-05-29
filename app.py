@@ -61,7 +61,7 @@ class VideoProcessor(VideoProcessorBase):
                     )
 
                     result = response.json()
-
+                    print(result)
                     self.last_predictions = result.get(
                         "predictions",
                         []
