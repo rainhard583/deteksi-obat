@@ -15,6 +15,7 @@ st.set_page_config(page_title="Deteksi Obat Realtime")
 
 st.title("Deteksi Obat Realtime AI")
 
+
 class VideoProcessor(VideoProcessorBase):
 
     def __init__(self):
@@ -27,12 +28,14 @@ class VideoProcessor(VideoProcessorBase):
 
         now = time.time()
 
-        # kirim frame ke Roboflow setiap 1 detik
-        if now - self.last_request > 1:
+        # kirim frame ke Roboflow setiap 0.5 detik
+        if now - self.last_request > 0.5:
 
             self.last_request = now
 
-            success, buffer = cv2.imencode(".jpg", img)
+            small_img = cv2.resize(img, (320, 320))
+
+            success, buffer = cv2.imencode(".jpg", small_img)
 
             if success:
 
@@ -94,6 +97,7 @@ class VideoProcessor(VideoProcessorBase):
                 obat_rusak += 1
 
             else:
+
                 warna = (255, 255, 0)
 
             cv2.rectangle(
@@ -117,7 +121,7 @@ class VideoProcessor(VideoProcessorBase):
         cv2.putText(
             img,
             f"Bagus: {obat_bagus}",
-            (10, 35),
+            (10, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
             (0, 255, 0),
@@ -127,7 +131,7 @@ class VideoProcessor(VideoProcessorBase):
         cv2.putText(
             img,
             f"Rusak: {obat_rusak}",
-            (10, 75),
+            (10, 80),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
             (0, 0, 255),
@@ -138,6 +142,7 @@ class VideoProcessor(VideoProcessorBase):
             img,
             format="bgr24"
         )
+
 
 webrtc_streamer(
     key="deteksi-obat",
