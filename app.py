@@ -35,9 +35,9 @@ class VideoProcessor(VideoProcessorBase):
             self.last_request = now
 
             small_img = cv2.resize(
-    img,
-    (416, 416)
-)
+                img,
+                (224, 224)
+            )
 
             success, buffer = cv2.imencode(
                 ".jpg",
@@ -225,13 +225,13 @@ webrtc_streamer(
     video_processor_factory=VideoProcessor,
 
     media_stream_constraints={
-    "video": {
-        "width": {"ideal": 640},
-        "height": {"ideal": 480},
-        "facingMode": facing_mode
+        "video": {
+            "width": {"ideal": 640},
+            "height": {"ideal": 480},
+            "facingMode": {"ideal": facing_mode}
+        },
+        "audio": False
     },
-    "audio": False
-},
 
     rtc_configuration={
         "iceServers": [
