@@ -149,9 +149,6 @@ class VideoProcessor(VideoProcessorBase):
             2
         )
 
-        # ==========================
-        # ALARM VISUAL OBAT RUSAK
-        # ==========================
         if obat_rusak > 0:
 
             cv2.rectangle(
@@ -218,18 +215,20 @@ kamera = st.selectbox(
 
 if kamera == "Kamera Belakang":
     facing_mode = "environment"
+    stream_key = "deteksi-obat-belakang"
 else:
     facing_mode = "user"
+    stream_key = "deteksi-obat-depan"
 
 webrtc_streamer(
-    key="deteksi-obat",
+    key=stream_key,
     video_processor_factory=VideoProcessor,
 
     media_stream_constraints={
         "video": {
             "width": {"ideal": 640},
             "height": {"ideal": 480},
-            "facingMode": facing_mode
+            "facingMode": {"exact": facing_mode}
         },
         "audio": False
     },
