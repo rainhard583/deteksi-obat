@@ -207,24 +207,49 @@ class VideoProcessor(VideoProcessorBase):
         )
 
 
+# ==========================
+# PILIH KAMERA
+# ==========================
+
+kamera = st.selectbox(
+    "Pilih Kamera",
+    ["Kamera Belakang", "Kamera Depan"]
+)
+
+if kamera == "Kamera Belakang":
+    facing_mode = "environment"
+else:
+    facing_mode = "user"
+
 webrtc_streamer(
     key="deteksi-obat",
     video_processor_factory=VideoProcessor,
+
     media_stream_constraints={
         "video": {
-            "facingMode": {
-                "ideal": "environment"
-            }
+            "width": {"ideal": 640},
+            "height": {"ideal": 480},
+            "facingMode": facing_mode
         },
         "audio": False
     },
+
     rtc_configuration={
         "iceServers": [
             {
                 "urls": [
                     "stun:stun.l.google.com:19302"
                 ]
+            },
+            {
+                "urls": [
+                    "turn:openrelay.metered.ca:80"
+                ],
+                "username": "openrelayproject",
+                "credential": "openrelayproject"
             }
         ]
-    }
+    },
+
+    async_processing=True
 )
