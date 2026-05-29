@@ -249,7 +249,5 @@ webrtc_streamer(
                 "credential": "openrelayproject"
             }
         ]
-    },
-
-    async_processing=True
+    }
 )
