@@ -7,9 +7,12 @@ import time
 
 API_KEY = "uc5sGP3TXol5G8dbrmo3"
 
-ROBOFLOW_URL = f"https://detect.roboflow.com/pills-deteks/3?api_key={API_KEY}"
+ROBOFLOW_URL = (
+    f"https://detect.roboflow.com/pills-deteks/3?api_key={API_KEY}"
+)
 
 st.set_page_config(page_title="Deteksi Obat Realtime")
+
 st.title("Deteksi Obat Realtime AI")
 
 
@@ -27,13 +30,19 @@ class VideoProcessor(VideoProcessorBase):
 
         now = time.time()
 
-        if now - self.last_request > 0.5:
+        if now - self.last_request > 0.3:
 
             self.last_request = now
 
-            small_img = cv2.resize(img, (416, 416))
+            small_img = cv2.resize(
+                img,
+                (224, 224)
+            )
 
-            success, buffer = cv2.imencode(".jpg", small_img)
+            success, buffer = cv2.imencode(
+                ".jpg",
+                small_img
+            )
 
             if success:
 
@@ -48,7 +57,7 @@ class VideoProcessor(VideoProcessorBase):
                                 "image/jpeg"
                             )
                         },
-                        timeout=10
+                        timeout=5
                     )
 
                     result = response.json()
@@ -58,20 +67,20 @@ class VideoProcessor(VideoProcessorBase):
                         []
                     )
 
-                except Exception as e:
-                    print("ERROR:", e)
+                except Exception:
+                    pass
 
         obat_bagus = 0
         obat_rusak = 0
 
-        scale_x = orig_w / 416
-        scale_y = orig_h / 416
+        scale_x = orig_w / 224
+        scale_y = orig_h / 224
 
         for pred in self.last_predictions:
 
             confidence = pred.get("confidence", 0)
 
-            if confidence < 0.60:
+            if confidence < 0.70:
                 continue
 
             kelas = pred["class"]
@@ -89,14 +98,17 @@ class VideoProcessor(VideoProcessorBase):
             y2 = int(y + h / 2)
 
             if kelas == "obat_bagus":
+
                 warna = (0, 255, 0)
                 obat_bagus += 1
 
             elif kelas == "obat_rusak":
+
                 warna = (0, 0, 255)
                 obat_rusak += 1
 
             else:
+
                 warna = (255, 255, 0)
 
             cv2.rectangle(
@@ -137,6 +149,9 @@ class VideoProcessor(VideoProcessorBase):
             2
         )
 
+        # ==========================
+        # ALARM VISUAL OBAT RUSAK
+        # ==========================
         if obat_rusak > 0:
 
             cv2.rectangle(
@@ -147,14 +162,43 @@ class VideoProcessor(VideoProcessorBase):
                 12
             )
 
+            overlay = img.copy()
+
+            cv2.rectangle(
+                overlay,
+                (0, 0),
+                (orig_w, orig_h),
+                (0, 0, 255),
+                -1
+            )
+
+            cv2.addWeighted(
+                overlay,
+                0.15,
+                img,
+                0.85,
+                0,
+                img
+            )
+
             cv2.putText(
                 img,
                 "OBAT RUSAK!",
                 (30, 150),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                1.5,
+                1.8,
                 (255, 255, 255),
-                4
+                5
+            )
+
+            cv2.putText(
+                img,
+                "REJECT",
+                (80, 230),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                2,
+                (0, 0, 255),
+                6
             )
 
         return av.VideoFrame.from_ndarray(
@@ -163,31 +207,17 @@ class VideoProcessor(VideoProcessorBase):
         )
 
 
-kamera = st.selectbox(
-    "Pilih Kamera",
-    ["Kamera Belakang", "Kamera Depan"]
-)
-
-if kamera == "Kamera Belakang":
-    facing_mode = "environment"
-    stream_key = "belakang"
-else:
-    facing_mode = "user"
-    stream_key = "depan"
-
 webrtc_streamer(
-    key=stream_key,
+    key="deteksi-obat",
     video_processor_factory=VideoProcessor,
-
     media_stream_constraints={
         "video": {
-            "width": {"ideal": 640},
-            "height": {"ideal": 480},
-            "facingMode": facing_mode
+            "facingMode": {
+                "ideal": "environment"
+            }
         },
         "audio": False
     },
-
     rtc_configuration={
         "iceServers": [
             {
