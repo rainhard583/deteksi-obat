@@ -15,6 +15,29 @@ st.set_page_config(page_title="Deteksi Obat Realtime")
 
 st.title("Deteksi Obat Realtime AI")
 
+# ==========================
+# PILIH KAMERA
+# ==========================
+
+if "facing_mode" not in st.session_state:
+    st.session_state.facing_mode = "environment"
+
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("📷 Kamera Belakang", use_container_width=True):
+        st.session_state.facing_mode = "environment"
+with col2:
+    if st.button("🤳 Kamera Depan", use_container_width=True):
+        st.session_state.facing_mode = "user"
+
+facing_mode = st.session_state.facing_mode
+stream_key = f"deteksi-obat-{facing_mode}"
+
+if facing_mode == "environment":
+    st.info("📷 Menggunakan Kamera Belakang")
+else:
+    st.info("🤳 Menggunakan Kamera Depan")
+
 
 class VideoProcessor(VideoProcessorBase):
 
@@ -80,7 +103,7 @@ class VideoProcessor(VideoProcessorBase):
 
             confidence = pred.get("confidence", 0)
 
-            if confidence < 0.70:
+            if confidence < 0.85:
                 continue
 
             kelas = pred["class"]
@@ -149,9 +172,6 @@ class VideoProcessor(VideoProcessorBase):
             2
         )
 
-        # ==========================
-        # ALARM VISUAL OBAT RUSAK
-        # ==========================
         if obat_rusak > 0:
 
             cv2.rectangle(
@@ -208,13 +228,11 @@ class VideoProcessor(VideoProcessorBase):
 
 
 webrtc_streamer(
-    key="deteksi-obat",
+    key=stream_key,
     video_processor_factory=VideoProcessor,
     media_stream_constraints={
         "video": {
-            "facingMode": {
-                "ideal": "environment"
-            }
+            "facingMode": {"ideal": facing_mode}
         },
         "audio": False
     },
