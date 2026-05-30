@@ -8,7 +8,7 @@ import time
 API_KEY = "sbCWG60zWcTHvD7PhnUY"
 
 ROBOFLOW_URL = (
-    f"https://detect.roboflow.com/pills-deteks-ye04t/2?api_key={API_KEY}"
+    f"https://detect.roboflow.com/pills-deteks-5y4ck/1?api_key={API_KEY}"
 )
 
 st.set_page_config(page_title="Deteksi Obat Realtime")
@@ -57,9 +57,10 @@ class VideoProcessor(VideoProcessorBase):
 
             self.last_request = now
 
+            # FIX 1: Naik dari 224 → 640
             small_img = cv2.resize(
                 img,
-                (224, 224)
+                (640, 640)
             )
 
             success, buffer = cv2.imencode(
@@ -96,8 +97,9 @@ class VideoProcessor(VideoProcessorBase):
         obat_bagus = 0
         obat_rusak = 0
 
-        scale_x = orig_w / 224
-        scale_y = orig_h / 224
+        # FIX 2: Skala ikut 640
+        scale_x = orig_w / 640
+        scale_y = orig_h / 640
 
         for pred in self.last_predictions:
 
@@ -232,7 +234,8 @@ webrtc_streamer(
     video_processor_factory=VideoProcessor,
     media_stream_constraints={
         "video": {
-            "facingMode": {"ideal": facing_mode}
+            # FIX 3: exact supaya kamera tidak salah pilih
+            "facingMode": {"exact": facing_mode}
         },
         "audio": False
     },
